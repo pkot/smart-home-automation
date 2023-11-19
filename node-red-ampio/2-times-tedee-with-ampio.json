@@ -1,0 +1,772 @@
+[
+    {
+        "id": "982640cc3c0d5023",
+        "type": "tab",
+        "label": "tedee-Ampio",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "a647b5f5da6cee6f",
+        "type": "subflow",
+        "name": "tedee",
+        "info": "",
+        "category": "",
+        "in": [
+            {
+                "x": 140,
+                "y": 80,
+                "wires": [
+                    {
+                        "id": "ac38f00ad08f85ce"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 1410,
+                "y": 240,
+                "wires": [
+                    {
+                        "id": "69b494019f116118",
+                        "port": 0
+                    }
+                ]
+            },
+            {
+                "x": 1400,
+                "y": 320,
+                "wires": [
+                    {
+                        "id": "2f2ba210a3a55e83",
+                        "port": 0
+                    }
+                ]
+            },
+            {
+                "x": 1410,
+                "y": 400,
+                "wires": [
+                    {
+                        "id": "e0946bc8f6e4ebf7",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [
+            {
+                "name": "Personal Access Key",
+                "type": "str",
+                "value": "put your PAK here"
+            }
+        ],
+        "meta": {
+            "module": "tedee",
+            "version": "0.0.1",
+            "author": "Pawel Kot <pkot@bezsensu.pl>",
+            "desc": "tedee integration",
+            "keywords": "tedee,lock,unlock"
+        },
+        "color": "#3FADB5",
+        "inputLabels": [
+            "{command, lockID}"
+        ],
+        "outputLabels": [
+            "{id, state} - numeric",
+            "{id, state} - text",
+            "{id, batteryLevel}",
+            ""
+        ],
+        "icon": "font-awesome/fa-lock",
+        "status": {
+            "x": 780,
+            "y": 380,
+            "wires": [
+                {
+                    "id": "7193da56eb99ac1c",
+                    "port": 0
+                },
+                {
+                    "id": "e9c33a1a476caee9",
+                    "port": 0
+                },
+                {
+                    "id": "52e9923024ca35f1",
+                    "port": 0
+                }
+            ]
+        }
+    },
+    {
+        "id": "58556d16.925acc",
+        "type": "ampioconfig",
+        "name": "",
+        "server": "localhost",
+        "port": "1883"
+    },
+    {
+        "id": "ac38f00ad08f85ce",
+        "type": "function",
+        "z": "a647b5f5da6cee6f",
+        "name": "prepare tedee API call",
+        "func": "let pak = env.get('Personal Access Key');\nlet base_url = \"https://api.tedee.com/api/v1.32/my/lock/\";\n\nlet lockID = msg.payload.lockID;\n\nmsg.method = \"POST\";\nmsg.headers = {};\nmsg.headers.Authorization = \"PersonalKey \" + pak;\nmsg.headers.accept = \"application/json\";\n\nswitch (msg.payload.command) {\n    case \"open\":\n        msg.url = base_url + lockID + \"/operation/unlock\";\n        break;\n    case \"close\":\n        msg.url = base_url + lockID + \"/operation/lock\";\n        break;\n    default:\n        msg.method = \"GET\";\n        if (flow.get(\"$parent.init\") == 1) {\n            msg.url = base_url;\n            flow.set(\"$parent.init\", 0);\n        } else {\n            msg.url = base_url + \"sync\";\n        }\n        break;\n}\nmsg.command = msg.payload.command;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 540,
+        "y": 80,
+        "wires": [
+            [
+                "f9014a38957c1062"
+            ]
+        ]
+    },
+    {
+        "id": "f9014a38957c1062",
+        "type": "http request",
+        "z": "a647b5f5da6cee6f",
+        "name": "call tedee API",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 760,
+        "y": 80,
+        "wires": [
+            [
+                "d6b279aea76db665"
+            ]
+        ]
+    },
+    {
+        "id": "2ba45a169ad35fbc",
+        "type": "json",
+        "z": "a647b5f5da6cee6f",
+        "name": "read the response",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 410,
+        "y": 280,
+        "wires": [
+            [
+                "6ec835cb4cc0c308"
+            ]
+        ]
+    },
+    {
+        "id": "69b494019f116118",
+        "type": "change",
+        "z": "a647b5f5da6cee6f",
+        "name": "set lock state",
+        "rules": [
+            {
+                "t": "set",
+                "p": "retval.id",
+                "pt": "msg",
+                "to": "payload.id",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "retval.state",
+                "pt": "msg",
+                "to": "payload.lockProperties.state",
+                "tot": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "payload",
+                "pt": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "retval",
+                "tot": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "retval",
+                "pt": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 980,
+        "y": 240,
+        "wires": [
+            [
+                "2f2ba210a3a55e83"
+            ]
+        ]
+    },
+    {
+        "id": "e0946bc8f6e4ebf7",
+        "type": "change",
+        "z": "a647b5f5da6cee6f",
+        "name": "set lock battery level",
+        "rules": [
+            {
+                "t": "set",
+                "p": "retval.id",
+                "pt": "msg",
+                "to": "payload.id",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "retval.batteryLevel",
+                "pt": "msg",
+                "to": "payload.lockProperties.batteryLevel",
+                "tot": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "payload",
+                "pt": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "retval",
+                "tot": "msg"
+            },
+            {
+                "t": "delete",
+                "p": "retval",
+                "pt": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1000,
+        "y": 400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a55fb82167b865d9",
+        "type": "change",
+        "z": "a647b5f5da6cee6f",
+        "name": "request read lock state",
+        "rules": [
+            {
+                "t": "delete",
+                "p": "payload",
+                "pt": "msg"
+            },
+            {
+                "t": "set",
+                "p": "payload.command",
+                "pt": "msg",
+                "to": "check",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 420,
+        "y": 160,
+        "wires": [
+            [
+                "ac38f00ad08f85ce"
+            ]
+        ]
+    },
+    {
+        "id": "d6b279aea76db665",
+        "type": "switch",
+        "z": "a647b5f5da6cee6f",
+        "name": "switch on error code",
+        "property": "statusCode",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "200",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "202",
+                "vt": "str"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 3,
+        "x": 180,
+        "y": 320,
+        "wires": [
+            [
+                "2ba45a169ad35fbc",
+                "7193da56eb99ac1c"
+            ],
+            [
+                "e9c33a1a476caee9"
+            ],
+            [
+                "52e9923024ca35f1"
+            ]
+        ]
+    },
+    {
+        "id": "b8701202e0bf9d48",
+        "type": "inject",
+        "z": "a647b5f5da6cee6f",
+        "name": "loop every 20 seconds",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "20",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "str",
+        "x": 170,
+        "y": 160,
+        "wires": [
+            [
+                "a55fb82167b865d9"
+            ]
+        ]
+    },
+    {
+        "id": "2f2ba210a3a55e83",
+        "type": "function",
+        "z": "a647b5f5da6cee6f",
+        "name": "map lock status codes to names",
+        "func": "switch (msg.payload.state) {\n    case 0:\n        msg.payload.state = \"Uncalibrated\";\n        break;\n    case 1:\n        msg.payload.state = \"Calibrating\";\n        break;\n    case 2:\n        msg.payload.state = \"Unlocked\";\n        break;\n    case 3:\n        msg.payload.state = \"SemiLocked\";\n        break;\n    case 4:\n        msg.payload.state = \"Unlocking\";\n        break;\n    case 5:\n        msg.payload.state = \"Locking\";\n        break;\n    case 6:\n        msg.payload.state = \"Locked\";\n        break;\n    case 7:\n        msg.payload.state = \"Pulled\";\n        break;\n    case 8:\n        msg.payload.state = \"Pulling\";\n        break;\n    case 9:\n        msg.payload.state = \"Unknown\";\n        break;\n    case 18:\n        msg.payload.state = \"Updating\";\n        break;\n    default:\n        msg.payload.state = \"Error reading status\";\n        break;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1040,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e447c4726a210c48",
+        "type": "split",
+        "z": "a647b5f5da6cee6f",
+        "name": "split locks",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 780,
+        "y": 280,
+        "wires": [
+            [
+                "69b494019f116118",
+                "e0946bc8f6e4ebf7"
+            ]
+        ]
+    },
+    {
+        "id": "6ec835cb4cc0c308",
+        "type": "change",
+        "z": "a647b5f5da6cee6f",
+        "name": "extract result",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.result",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 610,
+        "y": 280,
+        "wires": [
+            [
+                "e447c4726a210c48"
+            ]
+        ]
+    },
+    {
+        "id": "7193da56eb99ac1c",
+        "type": "function",
+        "z": "a647b5f5da6cee6f",
+        "name": "set the node status (read OK)",
+        "func": "msg.payload = {\n    fill: \"blue\",\n    shape: \"dot\",\n    text: \"Status read successful\"\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 340,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e9c33a1a476caee9",
+        "type": "function",
+        "z": "a647b5f5da6cee6f",
+        "name": "set the node status (command OK)",
+        "func": "msg.payload = {\n    fill: \"green\",\n    shape: \"dot\",\n    text: \"Lock operation successful: \" + msg.command\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 540,
+        "y": 380,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "52e9923024ca35f1",
+        "type": "function",
+        "z": "a647b5f5da6cee6f",
+        "name": "set the node status (error)",
+        "func": "msg.payload = {\n    fill: \"red\",\n    shape: \"dot\",\n    text: \"Error code: \" + msg.statusCode\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 420,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "64fd2f42ef497007",
+        "type": "subflow:a647b5f5da6cee6f",
+        "z": "982640cc3c0d5023",
+        "name": "",
+        "x": 710,
+        "y": 200,
+        "wires": [
+            [
+                "ab50e1804ce01a35"
+            ],
+            [
+                "761996a61091b53d"
+            ],
+            [
+                "89db292cae194610"
+            ]
+        ],
+        "inputLabels": [
+            "command"
+        ],
+        "outputLabels": [
+            "lock id",
+            "(lock id, lock state)",
+            "(lock id, lock state text)",
+            "(lock id, lock battery level)"
+        ]
+    },
+    {
+        "id": "761996a61091b53d",
+        "type": "function",
+        "z": "982640cc3c0d5023",
+        "name": "set tedee lock status text",
+        "func": "var stateObjectID = flow.get(msg.payload.id.toString())[\"stateObjectID\"];\n\nif (stateObjectID) {\n    msg.url='http://localhost:8060/api/set/' + stateObjectID + '/setText/'+ msg.payload.state;\n    msg.method = 'GET'\n    delete msg.payload;\n} else {\n    msg = null;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1010,
+        "y": 200,
+        "wires": [
+            [
+                "84f6708985a35f63"
+            ]
+        ]
+    },
+    {
+        "id": "245136738ffe6003",
+        "type": "function",
+        "z": "982640cc3c0d5023",
+        "name": "initialize",
+        "func": "\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\n\nflow.set(\"12345\", {stateObjectID: \"1001\", batteryLevelObjectID: \"1002\", flagID: \"1\"});\nflow.set(\"67890\", {stateObjectID: \"1003\", batteryLevelObjectID: \"1004\", flagID: \"2\"});\n\nflow.set(\"ampio/from/819e/state/f/1\", {lockID: \"12345\", command: \"open\"});\nflow.set(\"ampio/from/819e/state/f/2\", { lockID: \"12345\", command: \"close\" });\nflow.set(\"ampio/from/819e/state/f/3\", {lockID: \"67890\", command: \"open\"});\nflow.set(\"ampio/from/819e/state/f/4\", { lockID: \"67890\", command: \"close\" });\n\nflow.set(\"init\", 1);\n",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 60,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "84f6708985a35f63",
+        "type": "http request",
+        "z": "982640cc3c0d5023",
+        "name": "set flag value at Ampio",
+        "method": "use",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "basic",
+        "senderr": false,
+        "headers": [],
+        "x": 1320,
+        "y": 220,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "44abd1dc4b975d96",
+        "type": "Ampio IN",
+        "z": "982640cc3c0d5023",
+        "valtype": "f",
+        "mac": "819e",
+        "ioid": "1",
+        "name": "Ampio: lock 1 open",
+        "retainignore": true,
+        "server": "58556d16.925acc",
+        "x": 90,
+        "y": 180,
+        "wires": [
+            [
+                "85374f748d04112e"
+            ]
+        ]
+    },
+    {
+        "id": "2a1e23a3a3ddbb46",
+        "type": "Ampio IN",
+        "z": "982640cc3c0d5023",
+        "valtype": "f",
+        "mac": "819e",
+        "ioid": "2",
+        "name": "Ampio: lock 1 close",
+        "retainignore": "",
+        "server": "58556d16.925acc",
+        "x": 90,
+        "y": 320,
+        "wires": [
+            [
+                "6fcab29294294f2c"
+            ]
+        ]
+    },
+    {
+        "id": "85374f748d04112e",
+        "type": "switch",
+        "z": "982640cc3c0d5023",
+        "name": "if clicked",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "1",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 280,
+        "y": 180,
+        "wires": [
+            [
+                "bdb9aae96a72edc6"
+            ]
+        ]
+    },
+    {
+        "id": "6fcab29294294f2c",
+        "type": "switch",
+        "z": "982640cc3c0d5023",
+        "name": "if clicked",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "1",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 340,
+        "y": 360,
+        "wires": [
+            [
+                "bdb9aae96a72edc6"
+            ]
+        ]
+    },
+    {
+        "id": "89db292cae194610",
+        "type": "function",
+        "z": "982640cc3c0d5023",
+        "name": "set tedee battery level text",
+        "func": "var batteryLevelObjectID = flow.get(msg.payload.id.toString())[\"batteryLevelObjectID\"];\n\nif (batteryLevelObjectID) {\n    msg.url = 'http://localhost:8060/api/set/' + batteryLevelObjectID + '/setText/'+ msg.payload.batteryLevel+\"%\";\n    msg.method = 'GET'\n    delete msg.payload;\n} else {\n    msg = null;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1020,
+        "y": 240,
+        "wires": [
+            [
+                "84f6708985a35f63"
+            ]
+        ]
+    },
+    {
+        "id": "ab50e1804ce01a35",
+        "type": "function",
+        "z": "982640cc3c0d5023",
+        "name": "set Ampio flag value for lock status",
+        "func": "const zeroPad = (num, places) =>\n    String(num).padStart(places, '0')\n\nvar flagID = flow.get(msg.payload.id.toString())[\"flagID\"];\n\nmsg.payload = '7AF9'\n    +zeroPad(Number(msg.payload.state).toString(16),2)\n    +zeroPad((Number(flagID)-1).toString(16),2)\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1040,
+        "y": 160,
+        "wires": [
+            [
+                "107e6d58fb1b9e71"
+            ]
+        ]
+    },
+    {
+        "id": "107e6d58fb1b9e71",
+        "type": "Ampio OUT",
+        "z": "982640cc3c0d5023",
+        "valtype": "r",
+        "mac": "819e",
+        "ioid": "",
+        "name": "",
+        "server": "58556d16.925acc",
+        "x": 1310,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "03ae2875a6ade78e",
+        "type": "Ampio IN",
+        "z": "982640cc3c0d5023",
+        "valtype": "f",
+        "mac": "819e",
+        "ioid": "3",
+        "name": "Ampio: lock 2 open",
+        "retainignore": "",
+        "server": "58556d16.925acc",
+        "x": 90,
+        "y": 260,
+        "wires": [
+            [
+                "85374f748d04112e"
+            ]
+        ]
+    },
+    {
+        "id": "f571ec071ecc7192",
+        "type": "Ampio IN",
+        "z": "982640cc3c0d5023",
+        "valtype": "f",
+        "mac": "819e",
+        "ioid": "4",
+        "name": "Ampio: lock 2 close",
+        "retainignore": "",
+        "server": "58556d16.925acc",
+        "x": 90,
+        "y": 400,
+        "wires": [
+            [
+                "6fcab29294294f2c"
+            ]
+        ]
+    },
+    {
+        "id": "bdb9aae96a72edc6",
+        "type": "function",
+        "z": "982640cc3c0d5023",
+        "name": "set command and lockID",
+        "func": "msg.payload = {\n    command: flow.get(msg.topic)[\"command\"],\n    lockID: flow.get(msg.topic)[\"lockID\"]\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 280,
+        "wires": [
+            [
+                "64fd2f42ef497007"
+            ]
+        ]
+    }
+]
